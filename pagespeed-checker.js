@@ -312,7 +312,7 @@ async function processBatch(urls, csvWriter) {
 async function processUrls() {
     // Create CSV writer with all headers
     const csvWriter = createObjectCsvWriter({
-        path: 'results.csv',
+        path: 'retail-master-pagespeed-results.csv',
         header: headers
     });
 
