@@ -6,14 +6,20 @@ const fetch = require('node-fetch');
 // Rate limiter configuration
 const RATE_LIMIT = 400;  
 const TIME_WINDOW = 100; // seconds
-const BATCH_SIZE = 30;   
+const BATCH_SIZE = 20;   
 const DELAY_BETWEEN_BATCHES = (TIME_WINDOW * 1000) / (RATE_LIMIT / BATCH_SIZE); // ≈ 1000ms
 
 // Sleep function
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Replace with your actual API key from Google Cloud Console
-const API_KEY = 'AIzaSyCwmPrKvWqQQq5_x-GUzVZAWKdzA_o-AJc';
+// Get API key from first command line argument after the script name
+const [nodePath, scriptPath, API_KEY] = process.argv;
+
+if (!API_KEY) {
+    console.error('Please provide an API key as a command line argument:');
+    console.error('node pagespeed-checker.js YOUR_API_KEY');
+    process.exit(1);
+}
 
 async function analyzeUrl(url) {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -215,45 +221,13 @@ function getErrorObject(url) {
 // Define all headers
 const headers = [
     {id: 'url', title: 'Website'},
-    {id: 'company', title: 'Company'},
-    {id: 'revenue', title: 'Revenue'},
+    {id: 'company_name', title: 'Company Name'},
+    {id: 'revenue', title: 'Revenue (in 000s USD)'},
     {id: 'primary_industry', title: 'Primary Industry'},
     {id: 'primary_sub_industry', title: 'Primary Sub-Industry'},
     {id: 'linkedin_url', title: 'LinkedIn Company Profile URL'},
     {id: 'business_model', title: 'Business Model'},
     {id: 'company_state', title: 'Company State'},
-    {id: 'lighthouse_lcp', title: 'Lighthouse LCP'},
-    {id: 'lighthouse_fcp', title: 'Lighthouse FCP'},
-    {id: 'lighthouse_cls', title: 'Lighthouse CLS'},
-    {id: 'lighthouse_performance_score', title: 'Lighthouse Performance Score'},
-    
-    // Homepage metrics
-    {id: 'homepage_overall_category', title: 'Homepage Overall Category'},
-    {id: 'homepage_lcp_75th', title: 'Homepage LCP 75th Percentile'},
-    {id: 'homepage_lcp_good', title: 'Homepage LCP Good %'},
-    {id: 'homepage_lcp_needs_improvement', title: 'Homepage LCP Needs Improvement %'},
-    {id: 'homepage_lcp_poor', title: 'Homepage LCP Poor %'},
-    
-    {id: 'homepage_inp_75th', title: 'Homepage INP 75th Percentile'},
-    {id: 'homepage_inp_good', title: 'Homepage INP Good %'},
-    {id: 'homepage_inp_needs_improvement', title: 'Homepage INP Needs Improvement %'},
-    {id: 'homepage_inp_poor', title: 'Homepage INP Poor %'},
-    
-    {id: 'homepage_cls_75th', title: 'Homepage CLS 75th Percentile'},
-    {id: 'homepage_cls_good', title: 'Homepage CLS Good %'},
-    {id: 'homepage_cls_needs_improvement', title: 'Homepage CLS Needs Improvement %'},
-    {id: 'homepage_cls_poor', title: 'Homepage CLS Poor %'},
-    
-    {id: 'homepage_fcp_75th', title: 'Homepage FCP 75th Percentile'},
-    {id: 'homepage_fcp_good', title: 'Homepage FCP Good %'},
-    {id: 'homepage_fcp_needs_improvement', title: 'Homepage FCP Needs Improvement %'},
-    {id: 'homepage_fcp_poor', title: 'Homepage FCP Poor %'},
-
-    {id: 'homepage_ttfb_category', title: 'Homepage TTFB Category'},
-    {id: 'homepage_ttfb_75th', title: 'Homepage TTFB 75th Percentile'},
-    {id: 'homepage_ttfb_good', title: 'Homepage TTFB Good %'},
-    {id: 'homepage_ttfb_needs_improvement', title: 'Homepage TTFB Needs Improvement %'},
-    {id: 'homepage_ttfb_poor', title: 'Homepage TTFB Poor %'},
     
     // Origin metrics
     {id: 'origin_overall_category', title: 'Origin Overall Category'},
@@ -281,7 +255,40 @@ const headers = [
     {id: 'origin_ttfb_75th', title: 'Origin TTFB 75th Percentile'},
     {id: 'origin_ttfb_good', title: 'Origin TTFB Good %'},
     {id: 'origin_ttfb_needs_improvement', title: 'Origin TTFB Needs Improvement %'},
-    {id: 'origin_ttfb_poor', title: 'Origin TTFB Poor %'}
+    {id: 'origin_ttfb_poor', title: 'Origin TTFB Poor %'},
+
+     // Homepage metrics
+    {id: 'homepage_overall_category', title: 'Homepage Overall Category'},
+    {id: 'homepage_lcp_75th', title: 'Homepage LCP 75th Percentile'},
+    {id: 'homepage_lcp_good', title: 'Homepage LCP Good %'},
+    {id: 'homepage_lcp_needs_improvement', title: 'Homepage LCP Needs Improvement %'},
+    {id: 'homepage_lcp_poor', title: 'Homepage LCP Poor %'},
+     
+    {id: 'homepage_inp_75th', title: 'Homepage INP 75th Percentile'},
+    {id: 'homepage_inp_good', title: 'Homepage INP Good %'},
+    {id: 'homepage_inp_needs_improvement', title: 'Homepage INP Needs Improvement %'},
+    {id: 'homepage_inp_poor', title: 'Homepage INP Poor %'},
+
+    {id: 'homepage_cls_75th', title: 'Homepage CLS 75th Percentile'},
+    {id: 'homepage_cls_good', title: 'Homepage CLS Good %'},
+    {id: 'homepage_cls_needs_improvement', title: 'Homepage CLS Needs Improvement %'},
+    {id: 'homepage_cls_poor', title: 'Homepage CLS Poor %'},
+     
+    {id: 'homepage_fcp_75th', title: 'Homepage FCP 75th Percentile'},
+    {id: 'homepage_fcp_good', title: 'Homepage FCP Good %'},
+    {id: 'homepage_fcp_needs_improvement', title: 'Homepage FCP Needs Improvement %'},
+    {id: 'homepage_fcp_poor', title: 'Homepage FCP Poor %'},
+ 
+    {id: 'homepage_ttfb_category', title: 'Homepage TTFB Category'},
+    {id: 'homepage_ttfb_75th', title: 'Homepage TTFB 75th Percentile'},
+    {id: 'homepage_ttfb_good', title: 'Homepage TTFB Good %'},
+    {id: 'homepage_ttfb_needs_improvement', title: 'Homepage TTFB Needs Improvement %'},
+    {id: 'homepage_ttfb_poor', title: 'Homepage TTFB Poor %'},
+     
+    {id: 'lighthouse_lcp', title: 'Lighthouse LCP'},
+    {id: 'lighthouse_fcp', title: 'Lighthouse FCP'},
+    {id: 'lighthouse_cls', title: 'Lighthouse CLS'},
+    {id: 'lighthouse_performance_score', title: 'Lighthouse Performance Score'}
 ];
 
 // Process URLs in batches
@@ -321,8 +328,8 @@ async function processUrls() {
         for await (const record of parser) {
             records.push({
                 url: record.website,
-                company: record.Company,
-                revenue: record.Revenue,
+                company_name: record['Company Name'],
+                revenue: record['Revenue (in 000s USD)'],
                 primary_industry: record['Primary Industry'],
                 primary_sub_industry: record['Primary Sub-Industry'],
                 linkedin_url: record['LinkedIn Company Profile URL'],
